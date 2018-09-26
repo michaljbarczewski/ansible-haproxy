@@ -1,0 +1,15 @@
+---
+
+galaxy_info:
+  author: Jiri Tyr
+  description: Role which installs and configures HAproxy
+  license: MIT
+  min_ansible_version: 2.6
+  platforms:
+    - name: EL
+      versions:
+        - 7
+  galaxy_tags:
+    - web
+dependencies:
+  - config_encoder_filters

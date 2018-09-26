@@ -1,0 +1,23 @@
+---
+
+- name: Restart HAproxy service
+  service:
+    name: "{{ haproxy_service }}"
+    state: restarted
+  register: haproxy_service_restarted
+  when: >
+    haproxy_service_started is not defined or
+    not haproxy_service_started.changed
+
+- name: Reload HAproxy service
+  service:
+    name: "{{ haproxy_service }}"
+    state: reloaded
+  when: >
+    (
+      haproxy_service_started is not defined or
+      not haproxy_service_started.changed
+    ) and (
+      haproxy_service_restarted is not defined or
+      not haproxy_service_restarted.changed
+    )

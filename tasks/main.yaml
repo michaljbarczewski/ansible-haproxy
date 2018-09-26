@@ -1,0 +1,61 @@
+---
+
+- name: Test distribution
+  assert:
+    that: >
+      ansible_os_family == 'RedHat' or
+      ansible_os_family == 'Debian'
+
+- name: Add SCL YUM repo
+  yum_repository:
+    name: scl
+    description: SCL YUM repo
+    baseurl: "{{ haproxy_scl_yumrepo_url }}"
+    gpgcheck: no
+  args: "{{ haproxy_scl_yumrepo_params }}"
+  when: >
+    ansible_os_family == 'RedHat' and
+    haproxy_scl_yumrepo_install == true
+  tags:
+    - haproxy_pkg
+
+- name: Install HAproxy package
+  package:
+    name: "{{ haproxy_pkg }}"
+  notify:
+    - Restart HAproxy service
+  tags:
+    - haproxy_pkg
+
+- name: Configure HAproxy Sysconfig
+  template:
+    src: sysconfig.j2
+    dest: "{{ haproxy_sysconfig_path }}"
+  when: >
+    ansible_os_family == 'RedHat'
+  notify: Restart HAproxy service
+  tags:
+    - haproxy_config
+
+- name: Configure HAproxy
+  template:
+    src: haproxy.conf.j2
+    dest: "{{ haproxy_config_path }}"
+  notify: Reload HAproxy service
+  tags:
+    - haproxy_config
+
+- name: Enable HAproxy service
+  service:
+    name: "{{ haproxy_service }}"
+    enabled: yes
+  tags:
+    - haproxy_service
+
+- name: Start HAproxy service
+  service:
+    name: "{{ haproxy_service }}"
+    state: started
+  register: haproxy_service_started
+  tags:
+    - haproxy_service
