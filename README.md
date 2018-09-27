@@ -87,7 +87,7 @@ haproxy_path_ns: "{{
 
 
 # Path to the HAproxy config file
-haproxy_config_path: /etc/{{ haproxy_path_ns }}/haproxy.conf
+haproxy_config_path: /etc/{{ haproxy_path_ns }}/haproxy/haproxy.conf
 
 # Default values of the options of the global section
 haproxy_config_global_log: 127.0.0.1 local2
