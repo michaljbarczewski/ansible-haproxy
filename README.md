@@ -40,10 +40,16 @@ Examples
           - server legacy_server 127.0.0.1:8001
       - frontend app *:80:
           - default_backend legacy
-    # Add startup options
+    # Optionally add startup options into sysconfig (CentOS/RedHat only)
     haproxy_sysconfig_options: >
       -f /path/to/different/haproxy.conf
       -m 512
+    # Optionally add startup options into default file (Debian/Ubuntu only)
+    haproxy_default:
+      # Change the config file location if needed
+      config: /etc/haproxy/haproxy.cfg
+      # Add extra flags here, see haproxy(1) for a few options
+      extraopts: -de -m 16
   roles:
     - haproxy
 ```
@@ -55,7 +61,7 @@ Role variables
 Variables used by the role:
 
 ```yaml
-# Whether to install the SCL YUM repo (provides latest HAproxy version)
+# Whether to add the SCL YUM repo (provides latest HAproxy version - only for EL7+)
 haproxy_scl_yumrepo_install: no
 
 # SCL YUM repo URL
@@ -63,6 +69,15 @@ haproxy_scl_yumrepo_url: http://mirror.centos.org/centos/$releasever/sclo/$basea
 
 # Additional SCL YUM repo params
 haproxy_scl_yumrepo_params: {}
+
+# Whether to add the APT repo (provides latest HAproxy version)
+haproxy_apt_repo_install: no
+
+# APT repo string
+haproxy_apt_repo_string: ppa:vbernat/haproxy-1.8
+
+# Additional APT repo params
+haproxy_apt_repo_params: {}
 
 # Package to be installed (explicite version can be specified here)
 haproxy_pkg: "{{
@@ -87,7 +102,7 @@ haproxy_path_ns: "{{
 
 
 # Path to the HAproxy config file
-haproxy_config_path: /etc/{{ haproxy_path_ns }}/haproxy/haproxy.conf
+haproxy_config_path: /etc/{{ haproxy_path_ns }}/haproxy/haproxy.cfg
 
 # Default values of the options of the global section
 haproxy_config_global_log: 127.0.0.1 local2
@@ -286,61 +301,24 @@ haproxy_sysconfig_path: /etc/sysconfig/{{ haproxy_service }}
 # Default value of the sysconfig options
 haproxy_sysconfig_options: ""
 
-# Sysconfig content
-haproxy_sysconfig:
+# Default sysconfig options
+haproxy_sysconfig__default:
   options: "{{ haproxy_sysconfig_options }}"
-```
 
-The above `haproxy_config` defines the following configuration:
+# Custom sysconfig options
+haproxy_sysconfig__custom: {}
 
-```
-global
-  log 127.0.0.1 local2
-  chroot /var/opt/rh/rh-haproxy18/lib/haproxy
-  pidfile /var/run/rh-haproxy18-haproxy.pid
-  maxconn 4000
-  user haproxy
-  group haproxy
-  daemon
-  stats socket /var/opt/rh/rh-haproxy18/lib/haproxy/stats
-  ssl-default-bind-ciphers PROFILE=SYSTEM
-  ssl-default-server-ciphers PROFILE=SYSTEM
+# Default sysconfig content (see README for examples)
+haproxy_sysconfig: "{{
+  haproxy_sysconfig__default | combine(
+  haproxy_sysconfig__custom) }}"
 
-defaults
-  mode http
-  log global
-  option httplog
-  option dontlognull
-  option http-server-close
-  option forwardfor except 127.0.0.0/8
-  option redispatch
-  retries 3
-  timeout http-request 10s
-  timeout queue 1m
-  timeout connect 10s
-  timeout client 1m
-  timeout server 1m
-  timeout http-keep-alive 10s
-  timeout check 10s
-  maxconn 3000
 
-frontend main
-  bind *:5000
-  acl url_static path_beg -i /static /images /javascript /stylesheets
-  acl url_static path_end -i .jpg .gif .png .css .js
-  use_backend static if url_static
-  default_backend app
+# Default path
+haproxy_default_path: /etc/default/{{ haproxy_service }}
 
-backend static
-  balance roundrobin
-  server static 127.0.0.1:4331 check
-
-backend app
-  balance roundrobin
-  server app1 127.0.0.1:5001 check
-  server app1 127.0.0.1:5002 check
-  server app1 127.0.0.1:5003 check
-  server app1 127.0.0.1:5004 check
+# Sysconfig content (see README for examples)
+haproxy_default: {}
 ```
 
 

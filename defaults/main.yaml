@@ -1,6 +1,6 @@
 ---
 
-# Whether to install the SCL YUM repo (provides latest HAproxy version)
+# Whether to add the SCL YUM repo (provides latest HAproxy version - only for EL7+)
 haproxy_scl_yumrepo_install: no
 
 # SCL YUM repo URL
@@ -8,6 +8,15 @@ haproxy_scl_yumrepo_url: http://mirror.centos.org/centos/$releasever/sclo/$basea
 
 # Additional SCL YUM repo params
 haproxy_scl_yumrepo_params: {}
+
+# Whether to add the APT repo (provides latest HAproxy version)
+haproxy_apt_repo_install: no
+
+# APT repo string
+haproxy_apt_repo_string: ppa:vbernat/haproxy-1.8
+
+# Additional APT repo params
+haproxy_apt_repo_params: {}
 
 # Package to be installed (explicite version can be specified here)
 haproxy_pkg: "{{
@@ -231,6 +240,21 @@ haproxy_sysconfig_path: /etc/sysconfig/{{ haproxy_service }}
 # Default value of the sysconfig options
 haproxy_sysconfig_options: ""
 
-# Sysconfig content
-haproxy_sysconfig:
+# Default sysconfig options
+haproxy_sysconfig__default:
   options: "{{ haproxy_sysconfig_options }}"
+
+# Custom sysconfig options
+haproxy_sysconfig__custom: {}
+
+# Default sysconfig content (see README for examples)
+haproxy_sysconfig: "{{
+  haproxy_sysconfig__default | combine(
+  haproxy_sysconfig__custom) }}"
+
+
+# Default path
+haproxy_default_path: /etc/default/{{ haproxy_service }}
+
+# Sysconfig content (see README for examples)
+haproxy_default: {}

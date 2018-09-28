@@ -15,7 +15,18 @@
   args: "{{ haproxy_scl_yumrepo_params }}"
   when: >
     ansible_os_family == 'RedHat' and
+    ansible_distribution_major_version | int > 6 and
     haproxy_scl_yumrepo_install == true
+  tags:
+    - haproxy_pkg
+
+- name: Add APT repo
+  apt_repository:
+    repo: "{{ haproxy_apt_repo_string }}"
+  args: "{{ haproxy_apt_repo_params }}"
+  when: >
+    ansible_os_family == 'Debian' and
+    haproxy_apt_repo_install == true
   tags:
     - haproxy_pkg
 
@@ -33,6 +44,16 @@
     dest: "{{ haproxy_sysconfig_path }}"
   when: >
     ansible_os_family == 'RedHat'
+  notify: Restart HAproxy service
+  tags:
+    - haproxy_config
+
+- name: Configure HAproxy default file
+  template:
+    src: default.j2
+    dest: "{{ haproxy_default_path }}"
+  when: >
+    ansible_os_family == 'Debian'
   notify: Restart HAproxy service
   tags:
     - haproxy_config
