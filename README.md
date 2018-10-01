@@ -317,7 +317,7 @@ haproxy_sysconfig: "{{
 # Default path
 haproxy_default_path: /etc/default/{{ haproxy_service }}
 
-# Sysconfig content (see README for examples)
+# Content of the default file (see README for examples)
 haproxy_default: {}
 ```
 
