@@ -23,10 +23,38 @@ Examples
   roles:
     - haproxy
 
+- name: Example of how to alter the HAproxy configuration
+  hosts: all
+  vars:
+    # Create new config by reusing the global and defaults options
+    haproxy_config:
+      - "{{ haproxy_config_global }}"
+      - "{{ haproxy_config_defaults }}"
+      - frontend main:
+          - bind 0.0.0.0:80
+          - default_backend myservice
+      - backend myservice:
+          - balance roundrobin
+          - cookie SERVERID insert indirect nocache
+          - server server1 192.168.31.10:3000 check cookie server1
+          - server server2 192.168.31.11:3000 check cookie server2
+    # Enable debugging by adding an option onto the list of global options
+    haproxy_config_global_options__custom:
+      - debug
+      - option httplog
+    # Enable stats by adding few options into the list of defaults options
+    haproxy_config_defaults_options__custom:
+      - stats enable
+      - stats refresh 30s
+      - stats show-node
+      - stats uri /stats
+  roles:
+    - haproxy
+
 - name: Example of how to create new configuration
   hosts: all
   vars:
-    # Content of the default haproxy.conf file
+    # New config from scratch
     haproxy_config:
       - global:
           - debug
@@ -62,13 +90,13 @@ Variables used by the role:
 
 ```yaml
 # Whether to add the SCL YUM repo (provides latest HAproxy version - only for EL7+)
-haproxy_scl_yumrepo_install: no
+haproxy_scl_yum_repo_install: no
 
 # SCL YUM repo URL
-haproxy_scl_yumrepo_url: http://mirror.centos.org/centos/$releasever/sclo/$basearch/rh/
+haproxy_scl_yum_repo_url: http://mirror.centos.org/centos/$releasever/sclo/$basearch/rh/
 
 # Additional SCL YUM repo params
-haproxy_scl_yumrepo_params: {}
+haproxy_scl_yum_repo_params: {}
 
 # Whether to add the APT repo (provides latest HAproxy version)
 haproxy_apt_repo_install: no
@@ -82,32 +110,32 @@ haproxy_apt_repo_params: {}
 # Package to be installed (explicite version can be specified here)
 haproxy_pkg: "{{
   'rh-haproxy18'
-    if haproxy_scl_yumrepo_install
+    if haproxy_scl_yum_repo_install
     else
   'haproxy' }}"
 
 # Service name
 haproxy_service: "{{
   'rh-haproxy18-haproxy'
-    if haproxy_scl_yumrepo_install
+    if haproxy_scl_yum_repo_install
     else
   'haproxy' }}"
 
 # Path namespace
 haproxy_path_ns: "{{
   'opt/rh/rh-haproxy18'
-    if haproxy_scl_yumrepo_install
+    if haproxy_scl_yum_repo_install
     else
   '' }}"
 
 
 # Path to the HAproxy config file
-haproxy_config_path: /etc/{{ haproxy_path_ns }}/haproxy/haproxy.cfg
+haproxy_config_path: "{{ ('/etc/' ~ haproxy_path_ns ~ '/haproxy/haproxy.cfg') | regex_replace('/+', '/') }}"
 
 # Default values of the options of the global section
 haproxy_config_global_log: 127.0.0.1 local2
-haproxy_config_global_chroot: /var/{{ haproxy_path_ns }}/lib/haproxy
-haproxy_config_global_pidfile: /var/run/{{ haproxy_service }}.pid
+haproxy_config_global_chroot: "{{ ('/var/' ~ haproxy_path_ns ~ '/lib/haproxy') | regex_replace('/+', '/') }}"
+haproxy_config_global_pidfile: "{{ ('/var/run/' ~ haproxy_service ~ '.pid') | regex_replace('/+', '/') }}"
 haproxy_config_global_maxconn: 4000
 haproxy_config_global_user: haproxy
 haproxy_config_global_group: haproxy
@@ -150,12 +178,16 @@ haproxy_config_defaults_option_dontlognull: dontlognull
 haproxy_config_defaults_option_http_server_close: http-server-close
 haproxy_config_defaults_option_forwardfor: forwardfor except 127.0.0.0/8
 haproxy_config_defaults_option_redispatch: redispatch
-haproxy_config_defaults_option:
+haproxy_config_defaults_option__default:
   - "{{ haproxy_config_defaults_option_httplog }}"
   - "{{ haproxy_config_defaults_option_dontlognull }}"
   - "{{ haproxy_config_defaults_option_http_server_close }}"
   - "{{ haproxy_config_defaults_option_forwardfor }}"
   - "{{ haproxy_config_defaults_option_redispatch }}"
+haproxy_config_defaults_option__custom: []
+haproxy_config_defaults_option: "{{
+  haproxy_config_defaults_option__default +
+  haproxy_config_defaults_option__custom }}"
 haproxy_config_defaults_retries: 3
 haproxy_config_defaults_timeout_http_request: http-request 10s
 haproxy_config_defaults_timeout_queue: queue 1m
@@ -164,7 +196,7 @@ haproxy_config_defaults_timeout_client:  client 1m
 haproxy_config_defaults_timeout_server: server 1m
 haproxy_config_defaults_timeout_http_keep_alive: http-keep-alive 10s
 haproxy_config_defaults_timeout_check: check 10s
-haproxy_config_defaults_timeout:
+haproxy_config_defaults_timeout__default:
   - "{{ haproxy_config_defaults_timeout_http_request }}"
   - "{{ haproxy_config_defaults_timeout_queue }}"
   - "{{ haproxy_config_defaults_timeout_connect }}"
@@ -172,6 +204,10 @@ haproxy_config_defaults_timeout:
   - "{{ haproxy_config_defaults_timeout_server }}"
   - "{{ haproxy_config_defaults_timeout_http_keep_alive }}"
   - "{{ haproxy_config_defaults_timeout_check }}"
+haproxy_config_defaults_timeout__custom: []
+haproxy_config_defaults_timeout: "{{
+  haproxy_config_defaults_timeout__default +
+  haproxy_config_defaults_timeout__custom }}"
 haproxy_config_defaults_maxconn: 3000
 
 # Default options of the defaults section
@@ -319,6 +355,59 @@ haproxy_default_path: /etc/default/{{ haproxy_service }}
 
 # Content of the default file (see README for examples)
 haproxy_default: {}
+```
+
+The `haproxy_config` variable defined above produces the following config file
+by default:
+
+```
+global
+  log 127.0.0.1 local2
+  chroot /var/lib/haproxy
+  pidfile /var/run/haproxy.pid
+  maxconn 4000
+  user haproxy
+  group haproxy
+  daemon
+  stats socket /var/lib/haproxy/stats
+  ssl-default-bind-ciphers PROFILE=SYSTEM
+  ssl-default-server-ciphers PROFILE=SYSTEM
+
+defaults
+  mode http
+  log global
+  option httplog
+  option dontlognull
+  option http-server-close
+  option forwardfor except 127.0.0.0/8
+  option redispatch
+  retries 3
+  timeout http-request 10s
+  timeout queue 1m
+  timeout connect 10s
+  timeout client 1m
+  timeout server 1m
+  timeout http-keep-alive 10s
+  timeout check 10s
+  maxconn 3000
+
+frontend main
+  bind *:5000
+  acl url_static path_beg -i /static /images /javascript /stylesheets
+  acl url_static path_end -i .jpg .gif .png .css .js
+  use_backend static if url_static
+  default_backend app
+
+backend static
+  balance roundrobin
+  server static 127.0.0.1:4331 check
+
+backend app
+  balance roundrobin
+  server app1 127.0.0.1:5001 check
+  server app1 127.0.0.1:5002 check
+  server app1 127.0.0.1:5003 check
+  server app1 127.0.0.1:5004 check
 ```
 
 

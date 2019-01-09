@@ -1,13 +1,13 @@
----
+6---
 
 # Whether to add the SCL YUM repo (provides latest HAproxy version - only for EL7+)
-haproxy_scl_yumrepo_install: no
+haproxy_scl_yum_repo_install: no
 
 # SCL YUM repo URL
-haproxy_scl_yumrepo_url: http://mirror.centos.org/centos/$releasever/sclo/$basearch/rh/
+haproxy_scl_yum_repo_url: http://mirror.centos.org/centos/$releasever/sclo/$basearch/rh/
 
 # Additional SCL YUM repo params
-haproxy_scl_yumrepo_params: {}
+haproxy_scl_yum_repo_params: {}
 
 # Whether to add the APT repo (provides latest HAproxy version)
 haproxy_apt_repo_install: no
@@ -21,37 +21,37 @@ haproxy_apt_repo_params: {}
 # Package to be installed (explicite version can be specified here)
 haproxy_pkg: "{{
   'rh-haproxy18'
-    if haproxy_scl_yumrepo_install
+    if haproxy_scl_yum_repo_install
     else
   'haproxy' }}"
 
 # Service name
 haproxy_service: "{{
   'rh-haproxy18-haproxy'
-    if haproxy_scl_yumrepo_install
+    if haproxy_scl_yum_repo_install
     else
   'haproxy' }}"
 
 # Path namespace
 haproxy_path_ns: "{{
   'opt/rh/rh-haproxy18'
-    if haproxy_scl_yumrepo_install
+    if haproxy_scl_yum_repo_install
     else
   '' }}"
 
 
 # Path to the HAproxy config file
-haproxy_config_path: /etc/{{ haproxy_path_ns }}/haproxy/haproxy.cfg
+haproxy_config_path: "{{ ('/etc/' ~ haproxy_path_ns ~ '/haproxy/haproxy.cfg') | regex_replace('/+', '/') }}"
 
 # Default values of the options of the global section
 haproxy_config_global_log: 127.0.0.1 local2
-haproxy_config_global_chroot: /var/{{ haproxy_path_ns }}/lib/haproxy
-haproxy_config_global_pidfile: /var/run/{{ haproxy_service }}.pid
+haproxy_config_global_chroot: "{{ ('/var/' ~ haproxy_path_ns ~ '/lib/haproxy') | regex_replace('/+', '/') }}"
+haproxy_config_global_pidfile: "{{ ('/var/run/' ~ haproxy_service ~ '.pid') | regex_replace('/+', '/') }}"
 haproxy_config_global_maxconn: 4000
 haproxy_config_global_user: haproxy
 haproxy_config_global_group: haproxy
 haproxy_config_global_daemon: daemon
-haproxy_config_global_stats: socket /var/{{ haproxy_path_ns }}/lib/haproxy/stats
+haproxy_config_global_stats: "{{ ('socket /var/' ~ haproxy_path_ns ~ '/lib/haproxy/stats') | regex_replace('/+', '/') }}"
 haproxy_config_global_ssl_default_bind_ciphers: PROFILE=SYSTEM
 haproxy_config_global_ssl_default_server_ciphers: PROFILE=SYSTEM
 
@@ -89,12 +89,16 @@ haproxy_config_defaults_option_dontlognull: dontlognull
 haproxy_config_defaults_option_http_server_close: http-server-close
 haproxy_config_defaults_option_forwardfor: forwardfor except 127.0.0.0/8
 haproxy_config_defaults_option_redispatch: redispatch
-haproxy_config_defaults_option:
+haproxy_config_defaults_option__default:
   - "{{ haproxy_config_defaults_option_httplog }}"
   - "{{ haproxy_config_defaults_option_dontlognull }}"
   - "{{ haproxy_config_defaults_option_http_server_close }}"
   - "{{ haproxy_config_defaults_option_forwardfor }}"
   - "{{ haproxy_config_defaults_option_redispatch }}"
+haproxy_config_defaults_option__custom: []
+haproxy_config_defaults_option: "{{
+  haproxy_config_defaults_option__default +
+  haproxy_config_defaults_option__custom }}"
 haproxy_config_defaults_retries: 3
 haproxy_config_defaults_timeout_http_request: http-request 10s
 haproxy_config_defaults_timeout_queue: queue 1m
@@ -103,7 +107,7 @@ haproxy_config_defaults_timeout_client:  client 1m
 haproxy_config_defaults_timeout_server: server 1m
 haproxy_config_defaults_timeout_http_keep_alive: http-keep-alive 10s
 haproxy_config_defaults_timeout_check: check 10s
-haproxy_config_defaults_timeout:
+haproxy_config_defaults_timeout__default:
   - "{{ haproxy_config_defaults_timeout_http_request }}"
   - "{{ haproxy_config_defaults_timeout_queue }}"
   - "{{ haproxy_config_defaults_timeout_connect }}"
@@ -111,6 +115,10 @@ haproxy_config_defaults_timeout:
   - "{{ haproxy_config_defaults_timeout_server }}"
   - "{{ haproxy_config_defaults_timeout_http_keep_alive }}"
   - "{{ haproxy_config_defaults_timeout_check }}"
+haproxy_config_defaults_timeout__custom: []
+haproxy_config_defaults_timeout: "{{
+  haproxy_config_defaults_timeout__default +
+  haproxy_config_defaults_timeout__custom }}"
 haproxy_config_defaults_maxconn: 3000
 
 # Default options of the defaults section

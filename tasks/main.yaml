@@ -3,20 +3,20 @@
 - name: Test distribution
   assert:
     that: >
-      ansible_os_family == 'RedHat' or
-      ansible_os_family == 'Debian'
+      ansible_facts.os_family == 'RedHat' or
+      ansible_facts.os_family == 'Debian'
 
 - name: Add SCL YUM repo
   yum_repository:
     name: scl
     description: SCL YUM repo
-    baseurl: "{{ haproxy_scl_yumrepo_url }}"
+    baseurl: "{{ haproxy_scl_yum_repo_url }}"
     gpgcheck: no
-  args: "{{ haproxy_scl_yumrepo_params }}"
+  args: "{{ haproxy_scl_yum_repo_params }}"
   when: >
-    ansible_os_family == 'RedHat' and
-    ansible_distribution_major_version | int > 6 and
-    haproxy_scl_yumrepo_install == true
+    ansible_facts.os_family == 'RedHat' and
+    ansible_facts.distribution_major_version | int > 6 and
+    haproxy_scl_yum_repo_install == true
   tags:
     - haproxy_pkg
 
@@ -25,7 +25,7 @@
     repo: "{{ haproxy_apt_repo_string }}"
   args: "{{ haproxy_apt_repo_params }}"
   when: >
-    ansible_os_family == 'Debian' and
+    ansible_facts.os_family == 'Debian' and
     haproxy_apt_repo_install == true
   tags:
     - haproxy_pkg
@@ -43,7 +43,7 @@
     src: sysconfig.j2
     dest: "{{ haproxy_sysconfig_path }}"
   when: >
-    ansible_os_family == 'RedHat'
+    ansible_facts.os_family == 'RedHat'
   notify: Restart HAproxy service
   tags:
     - haproxy_config
@@ -53,7 +53,7 @@
     src: default.j2
     dest: "{{ haproxy_default_path }}"
   when: >
-    ansible_os_family == 'Debian'
+    ansible_facts.os_family == 'Debian'
   notify: Restart HAproxy service
   tags:
     - haproxy_config
