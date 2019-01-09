@@ -1,4 +1,4 @@
-6---
+---
 
 # Whether to add the SCL YUM repo (provides latest HAproxy version - only for EL7+)
 haproxy_scl_yum_repo_install: no
